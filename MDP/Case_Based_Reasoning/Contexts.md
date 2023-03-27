@@ -1,0 +1,5 @@
+There are two contexts for the Cased Based Reasoning (CBR):
+
+1. **Context 1:** A recommender system that recommends one of the available records of the same database based on the internal similarities of the records with one of the selected records.
+   1. Assume that we have a database of Hotels or Movies. We we pick on the current records like Movie 8. This recommender system searches for similarity of all records in the data base and lists for example the top 3 movies with the highest similarity with the selected movie.
+2. **Context 2:** For each record, we have a number of features and the decision for that feature. For example, futures can be the result of different tests for a pataint and the last column is the diagnosis as whether he has a cancer. Now we have a new paitient and we want to check as whether he has a cancer based on the result of his tests.

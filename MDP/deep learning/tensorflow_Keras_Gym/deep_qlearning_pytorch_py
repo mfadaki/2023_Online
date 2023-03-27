@@ -1,0 +1,197 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from collections import deque
+
+# Define the Cliff Walking environment
+
+
+class CliffWalking():
+    def __init__(self):
+        self.grid = np.zeros((4, 12), dtype=np.int32)
+        self.start = (3, 0)
+        self.goal = (3, 11)
+        self.position = self.start
+        self.actions = ['up', 'down', 'left', 'right']
+        self.reward = -1
+        self.terminal = False
+
+    def reset(self):
+        self.grid = np.zeros((4, 12), dtype=np.int32)
+        self.position = self.start
+        self.terminal = False
+        return self.position
+
+    def step(self, action):
+        if self.terminal:
+            raise Exception("Game over, please reset environment")
+
+        if action not in self.actions:
+            raise Exception("Invalid action")
+
+        if action == 'up':
+            next_position = (self.position[0] - 1, self.position[1])
+        elif action == 'down':
+            next_position = (self.position[0] + 1, self.position[1])
+        elif action == 'left':
+            next_position = (self.position[0], self.position[1] - 1)
+        elif action == 'right':
+            next_position = (self.position[0], self.position[1] + 1)
+
+        if next_position[0] < 0 or next_position[0] > 3 or next_position[1] < 0 or next_position[1] > 11:
+            next_position = self.position
+
+        self.position = next_position
+
+        if self.position == self.goal:
+            self.terminal = True
+            return self.position, 0, True
+
+        return self.position, self.reward, False
+
+# Define the Deep Q-Network (DQN)
+
+
+class DQN(nn.Module):
+    def __init__(self, observation_space, action_space):
+        super(DQN, self).__init__()
+        self.fc1 = nn.Linear(observation_space, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, action_space)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+# Define the agent that uses the DQN to solve the Cliff Walking problem
+
+
+class Agent():
+    def __init__(self, observation_space, action_space):
+        self.observation_space = observation_space
+        self.action_space = action_space
+        self.memory = deque(maxlen=10000)
+        self.epsilon = 1.0
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.gamma = 0.99
+        self.batch_size = 64
+        self.learning_rate = 0.001
+        self.model = DQN(observation_space, action_space)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+        if np.random.rand() < self.epsilon:
+            return np.random.randint(self.action_space)
+        else:
+            return torch.argmax(self.model(torch.tensor(state).float())).item()
+
+
+env = CliffWalking()
+state_size = 2
+action_size = 4
+
+agent = Agent(state_size, action_size)
+
+episodes = 500
+max_steps = 100
+scores = []
+epsilons = []
+
+for episode in range(episodes):
+    state = env.reset()
+    score = 0
+    for step in range(max_steps):
+        action = agent.act(state)
+        next_state, reward, done = env.step(env.actions[action])
+        agent.remember(state, action, reward, next_state, done)
+        state = next_state
+        score += reward
+        if done:
+            break
+
+    scores.append(score)
+    epsilons.append(agent.epsilon)
+
+    # Train the agent after each episode
+    if len(agent.memory) > agent.batch_size:
+        batch = np.random.choice(len(agent.memory), agent.batch_size, replace=False)
+        for index in batch:
+            state, action, reward, next_state, done = agent.memory[index]
+            target = reward
+            if not done:
+                target = reward + agent.gamma * torch.max(agent.model(torch.tensor(next_state).float()))
+            q_values = agent.model(torch.tensor(state).float())
+            q_values[action] = target
+            agent.optimizer.zero_grad()
+            loss = F.mse_loss(q_values, agent.model(torch.tensor(state).float()))
+            loss.backward()
+            agent.optimizer.step()
+
+    # Decay the epsilon value after each episode
+    if agent.epsilon > agent.epsilon_min:
+        agent.epsilon *= agent.epsilon_decay
+
+    print("Episode: {}, Score: {}, Epsilon: {}".format(episode, score, agent.epsilon))
+
+print("Training finished")
+
+
+plt.plot(scores)
+plt.title("Scores over Episodes")
+plt.xlabel("Episode")
+plt.ylabel("Score")
+plt.show()
+
+plt.plot(epsilons)
+plt.title("Epsilons over Episodes")
+plt.xlabel("Episode")
+plt.ylabel("Epsilon")
+plt.show()
+
+
+######################
+
+# Define the grid-world dimensions
+rows = 4
+cols = 12
+
+# Define the mapping of actions to their corresponding symbols
+action_symbols = {
+    0: "^",  # up
+    1: "v",  # down
+    2: "<",  # left
+    3: ">"   # right
+}
+
+# Initialize a grid-world to visualize the optimal policy
+grid = np.zeros((rows, cols), dtype=str)
+
+# Loop over all states and determine the optimal action for each state
+for i in range(rows):
+    for j in range(cols):
+        state = i * cols + j
+        if state == 47:
+            # Mark goal region with a G
+            grid[i][j] = "G"
+        elif state in range(37, 47):
+            # Mark cliff regions with a C
+            grid[i][j] = "C"
+        else:
+            # Determine the optimal action for the current state
+            state_tensor = torch.tensor([state]).float()
+            q_values = agent.model(state_tensor)
+            action = torch.argmax(q_values).item()
+            # Mark the optimal action with its corresponding symbol
+            grid[i][j] = action_symbols[action]
+
+# Print the optimal policy grid
+print(grid)
