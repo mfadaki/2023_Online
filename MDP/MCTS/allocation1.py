@@ -94,7 +94,7 @@ class MCTSNode:
             self.parent.backpropagate(penalty)
 
 
-def mcts(game_state, iterations=5000):
+def mcts(game_state, iterations=80):
     root = MCTSNode(game_state)
 
     for _ in range(iterations):
@@ -110,6 +110,9 @@ def mcts(game_state, iterations=5000):
 
         penalty = node.game_state.get_penalty()
         node.backpropagate(penalty)
+
+    for ch in root.children:
+        print(f' child penalty = {ch.penalty_sum / (ch.visits+1e-10)}  --> Chils allocation = {ch.allocation}')
 
     return (
         min(root.children, key=lambda child: child.penalty_sum / child.visits)
