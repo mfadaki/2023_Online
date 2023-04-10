@@ -6,7 +6,14 @@ import matplotlib.pyplot as plt
 
 
 class AllocationGame:
-    def __init__(self, days_left=10, inventory=70, fill_rate_target=0.95, demands_range=(30, 80), penalty_per_shortage=10):
+    def __init__(
+        self,
+        days_left=10,
+        inventory=70,
+        fill_rate_target=0.95,
+        demands_range=(30, 80),
+        penalty_per_shortage=10,
+    ):
         self.inventory = inventory
         self.days_left = days_left
         self.fill_rate_target = fill_rate_target
@@ -14,15 +21,23 @@ class AllocationGame:
         self.penalty_per_shortage = penalty_per_shortage
         self.customer_shortages = [0, 0]
         self.customer_demands = [0, 0]
+        self.demands = []  # Added attribute to store the demands
 
     def play(self, allocation):
         if sum(allocation) > self.inventory or self.days_left == 0:
             return False
 
         demands = [random.randint(*self.demands_range) for _ in range(2)]
-        self.customer_demands = [cd + demand for cd, demand in zip(self.customer_demands, demands)]
-        shortages = [max(demand - alloc, 0) for demand, alloc in zip(demands, allocation)]
-        self.customer_shortages = [cs + shortage for cs, shortage in zip(self.customer_shortages, shortages)]
+        self.customer_demands = [
+            cd + demand for cd, demand in zip(self.customer_demands, demands)
+        ]
+        self.demands.append(demands)  # Store the demands for the current day
+        shortages = [
+            max(demand - alloc, 0) for demand, alloc in zip(demands, allocation)
+        ]
+        self.customer_shortages = [
+            cs + shortage for cs, shortage in zip(self.customer_shortages, shortages)
+        ]
 
         self.days_left -= 1
         return True
@@ -31,16 +46,32 @@ class AllocationGame:
         return self.days_left == 0
 
     def get_valid_allocations(self):
-        return [(i, self.inventory - i) for i in range(self.inventory + 1)]
+        inventory = self.inventory
+        demands = self.customer_demands
+
+        allocations = []
+        for a1 in range(
+            min(inventory, demands[0]) + 1
+        ):  # Limit allocation for customer 1 based on demand
+            for a2 in range(
+                min(inventory - a1, demands[1]) + 1
+            ):  # Limit allocation for customer 2 based on demand
+                allocations.append((a1, a2))
+        return allocations
 
     def get_penalty(self):
-        return sum(self.penalty_per_shortage * shortage for shortage in self.customer_shortages)
+        return sum(
+            self.penalty_per_shortage * shortage for shortage in self.customer_shortages
+        )
 
     def clone(self):
         return deepcopy(self)
 
     def get_fill_rates(self):
-        return [1 - (shortage / demand) for shortage, demand in zip(self.customer_shortages, self.customer_demands)]
+        return [
+            1 - (shortage / demand)
+            for shortage, demand in zip(self.customer_shortages, self.customer_demands)
+        ]
 
 
 class MCTSNode:
@@ -60,7 +91,20 @@ class MCTSNode:
             self.children.append(child)
 
     def select(self):
-        return max(self.children, key=lambda child: -child.penalty_sum/(child.visits + 1e-6) + math.sqrt(2*math.log(self.visits + 1e-6)/(child.visits + 1e-6)))
+        exploration_constant = math.sqrt(100)  # Introduce an exploration constant
+        best_child = max(
+            self.children, key=lambda child: child.ucb(exploration_constant)
+        )
+        return best_child
+
+    # ...
+
+    def ucb(self, exploration_constant):
+        if self.visits == 0 or not self.parent:
+            return float("inf")
+        return self.penalty_sum / self.visits + exploration_constant * math.sqrt(
+            math.log(self.parent.visits) / self.visits
+        )
 
     def backpropagate(self, penalty):
         self.visits += 1
@@ -73,14 +117,31 @@ def mcts(game_state, iterations=1000):
     root = MCTSNode(game_state)
 
     for _ in range(iterations):
-        selected_node = root.select()
-        if selected_node:
-            child_node = selected_node.expand()
-            result = child_node.rollout()
-            child_node.backpropagate(result)
+        node = root
+        while not node.game_state.is_game_over() and node.children:
+            node = node.select()
 
-    best_child = root.best_child()
-    return root, best_child
+        if not node.children and not node.game_state.is_game_over():
+            node.expand()
+
+        penalty = node.game_state.get_penalty()
+        node.backpropagate(penalty)
+
+        if not root.children:
+            return None
+        else:
+            return min(
+                root.children,
+                key=lambda child: child.penalty_sum / child.visits
+                if child.visits > 0
+                else float("inf"),
+            )
+
+    return (
+        min(root.children, key=lambda child: child.penalty_sum / child.visits)
+        if root.children
+        else None
+    )
 
 
 def draw_graph(node, G=None, pos=None):
@@ -106,12 +167,14 @@ def draw_graph(node, G=None, pos=None):
 if __name__ == "__main__":
     game = AllocationGame()
     allocations = []
+    demands_list = []
 
     while not game.is_game_over():
         mcts_result = mcts(game)
         if mcts_result:
             game.play(mcts_result.allocation)
             allocations.append(mcts_result.allocation)
+            demands_list.append(game.demands)  # Store the demands
         else:
             break
 
@@ -126,11 +189,28 @@ if __name__ == "__main__":
 
     print("Total penalty: $", game.get_penalty())
 
+    # Print demands during the performance review period
+    print("Demands during the performance review period:")
+    for i, demands in enumerate(game.demands, start=1):
+        print(f"Day {i}: Customer 1 - {demands[0]}, Customer 2 - {demands[1]}")
+
     # Generate the graph and draw it
-    root, best_child = mcts(game, iterations=500)  # Reduced the number of iterations for easier visualization
-    G, pos = draw_graph(root)
-    nx.draw(G, pos, with_labels=True, node_size=500, font_size=8, font_weight='bold', node_color='cyan', edgecolors='black')
+    mcts_result = mcts(
+        game, iterations=500
+    )  # Reduced the number of iterations for easier visualization
+    G, pos = draw_graph(mcts_result)
+    nx.draw(
+        G,
+        pos,
+        with_labels=True,
+        node_size=500,
+        font_size=8,
+        font_weight="bold",
+        node_color="cyan",
+        edgecolors="black",
+    )
     plt.show()
+
 
 #######################################
 # Networkx Graph  #####################

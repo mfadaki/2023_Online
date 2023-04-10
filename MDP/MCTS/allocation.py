@@ -6,7 +6,14 @@ import matplotlib.pyplot as plt
 
 
 class AllocationGame:
-    def __init__(self, days_left=10, inventory=70, fill_rate_target=0.95, demands_range=(30, 80), penalty_per_shortage=10):
+    def __init__(
+        self,
+        days_left=10,
+        inventory=70,
+        fill_rate_target=0.95,
+        demands_range=(30, 80),
+        penalty_per_shortage=10,
+    ):
         self.inventory = inventory
         self.days_left = days_left
         self.fill_rate_target = fill_rate_target
@@ -21,10 +28,16 @@ class AllocationGame:
             return False
 
         demands = [random.randint(*self.demands_range) for _ in range(2)]
-        self.customer_demands = [cd + demand for cd, demand in zip(self.customer_demands, demands)]
+        self.customer_demands = [
+            cd + demand for cd, demand in zip(self.customer_demands, demands)
+        ]
         self.demands.append(demands)  # Store the demands for the current day
-        shortages = [max(demand - alloc, 0) for demand, alloc in zip(demands, allocation)]
-        self.customer_shortages = [cs + shortage for cs, shortage in zip(self.customer_shortages, shortages)]
+        shortages = [
+            max(demand - alloc, 0) for demand, alloc in zip(demands, allocation)
+        ]
+        self.customer_shortages = [
+            cs + shortage for cs, shortage in zip(self.customer_shortages, shortages)
+        ]
 
         self.days_left -= 1
         return True
@@ -36,13 +49,18 @@ class AllocationGame:
         return [(i, self.inventory - i) for i in range(self.inventory + 1)]
 
     def get_penalty(self):
-        return sum(self.penalty_per_shortage * shortage for shortage in self.customer_shortages)
+        return sum(
+            self.penalty_per_shortage * shortage for shortage in self.customer_shortages
+        )
 
     def clone(self):
         return deepcopy(self)
 
     def get_fill_rates(self):
-        return [1 - (shortage / demand) for shortage, demand in zip(self.customer_shortages, self.customer_demands)]
+        return [
+            1 - (shortage / demand)
+            for shortage, demand in zip(self.customer_shortages, self.customer_demands)
+        ]
 
 
 class MCTSNode:
@@ -62,7 +80,11 @@ class MCTSNode:
             self.children.append(child)
 
     def select(self):
-        return max(self.children, key=lambda child: -child.penalty_sum/(child.visits + 1e-6) + math.sqrt(2*math.log(self.visits + 1e-6)/(child.visits + 1e-6)))
+        return max(
+            self.children,
+            key=lambda child: -child.penalty_sum / (child.visits + 1e-6)
+            + math.sqrt(2 * math.log(self.visits + 1e-6) / (child.visits + 1e-6)),
+        )
 
     def backpropagate(self, penalty):
         self.visits += 1
@@ -88,7 +110,11 @@ def mcts(game_state, iterations=1000):
         penalty = node.game_state.get_penalty()
         node.backpropagate(penalty)
 
-    return min(root.children, key=lambda child: child.penalty_sum/child.visits) if root.children else None
+    return (
+        min(root.children, key=lambda child: child.penalty_sum / child.visits)
+        if root.children
+        else None
+    )
 
 
 def draw_graph(node, G=None, pos=None):
@@ -138,19 +164,25 @@ if __name__ == "__main__":
 
     # Print demands during the performance review period
     print("Demands during the performance review period:")
-    for i, demands in enumerate(demands_list, start=1):
+    for i, demands in enumerate(game.demands, start=1):
         print(f"Day {i}: Customer 1 - {demands[0]}, Customer 2 - {demands[1]}")
 
     # Generate the graph and draw it
-    mcts_result = mcts(game, iterations=500)  # Reduced the number of iterations for easier visualization
+    mcts_result = mcts(
+        game, iterations=500
+    )  # Reduced the number of iterations for easier visualization
     G, pos = draw_graph(mcts_result)
-    nx.draw(G, pos, with_labels=True, node_size=500, font_size=8, font_weight='bold', node_color='cyan', edgecolors='black')
+    nx.draw(
+        G,
+        pos,
+        with_labels=True,
+        node_size=500,
+        font_size=8,
+        font_weight="bold",
+        node_color="cyan",
+        edgecolors="black",
+    )
     plt.show()
-
-    # Print demands during the performance review period
-    print("Demands during the performance review period:")
-    for i, demands in enumerate(game.demands, start=1):
-        print(f"Day {i}: Customer 1 - {demands[0]}, Customer 2 - {demands[1]}")
 
 
 #######################################
