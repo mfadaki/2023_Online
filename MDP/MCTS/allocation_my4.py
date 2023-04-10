@@ -11,12 +11,12 @@ import time
 
 
 model_param = {
-    'num_iterations': 100000,
+    'num_iterations': 1000000,
     'num_repeats': 10,
-    'augmented_valid_allocations': False,
     'augmented_rollout': False,
-    'augmented_select': False,
-    'augmented_fillrates': False,
+    'augmented_valid_allocations': True,
+    'augmented_select': True,
+    'augmented_fillrates': True,
     'c': 1e6,  # Exploration Coefficient
     'c1': 2,  # Augmentation Coefficient
     'Big_M': 1e20
@@ -411,7 +411,7 @@ for _ in range(model_param["num_repeats"]):
 #######################################################
 
 #######################################################
-
+""" 
 
 def find_best_allocation_sequence():
     root_node = MCTSNode._registry[0]
@@ -451,3 +451,4 @@ def find_best_allocation_sequence():
 
 best_sequence = find_best_allocation_sequence()
 print("Best allocation sequence:", best_sequence)
+ """
