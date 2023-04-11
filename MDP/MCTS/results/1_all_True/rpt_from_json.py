@@ -1,8 +1,14 @@
 import numpy as np
+# import scipy as cp
 import pandas as pd
+# import math
+# import sys
+# import os
 import json
 from json import JSONEncoder
 import glob
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from bokeh.plotting import figure, output_file, show
 from bokeh.models import NumeralTickFormatter
@@ -14,7 +20,6 @@ output_notebook()  # Show the graph just in the Jupyter notebook (inline)
 
 # path = "./results/0_No_Augm_in_MCTS/"
 path = os.path.dirname(os.path.abspath(__file__)) + "/"
-print(path)
 
 # Selct the most recent JSON file in the 'results' directory
 
@@ -59,7 +64,7 @@ for c in range(no_solions):
 
 ######################
 
-player = 1
+player = 2
 
 if player == 1:
     source1 = ColumnDataSource(data=dict(x=list(range(1, no_solions+1)), y1=fr_1_mcts_arr))

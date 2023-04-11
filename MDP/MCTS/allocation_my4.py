@@ -11,13 +11,13 @@ import time
 
 
 model_param = {
-    'num_iterations': 1000000,
-    'num_repeats': 10,
+    'num_iterations': 100000,
+    'num_repeats': 1000,
     'augmented_rollout': False,
-    'augmented_valid_allocations': True,
-    'augmented_select': True,
-    'augmented_fillrates': True,
-    'c': 1e6,  # Exploration Coefficient
+    'augmented_valid_allocations': False,
+    'augmented_select': False,
+    'augmented_fillrates': False,
+    'c': 2,  # Exploration Coefficient
     'c1': 2,  # Augmentation Coefficient
     'Big_M': 1e20
 }
@@ -49,7 +49,7 @@ class AllocationGame:
     def __init__(self):
         self.prp = 10
         self.days_remaining = 10
-        self.fill_rate_target = 0.85
+        self.fill_rate_target = 0.9
         self.demands_range = (2, 8)
         self.inventory = 10
         self.penalty_per_shortage_1 = 100
