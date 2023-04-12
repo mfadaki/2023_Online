@@ -12,7 +12,7 @@ import time
 
 model_param = {
     'num_iterations': 100000,
-    'num_repeats': 1000,
+    'num_repeats': 100,
     'augmented_rollout': False,
     'augmented_valid_allocations': False,
     'augmented_select': False,
@@ -282,7 +282,8 @@ class MCTSNode:
 def mcts(game_state, iterations):
     root = MCTSNode(game_state)
 
-    for _ in tqdm(range(iterations)):
+    # for _ in tqdm(range(iterations)):
+    for _ in range(iterations):
         node = root
         while not node.game_state.is_game_over() and node.children:
             node = node.select()
@@ -404,6 +405,7 @@ def main_run():
 
 
 for _ in range(model_param["num_repeats"]):
+    print(_)
     jsResult = main_run()
     # encodedNumpyData = json.dumps(jsData, cls=NumpyArrayEncoder)  # use dump() to write array into file
     with open("./results/" + str(_) + ".json", "w") as write_file:
