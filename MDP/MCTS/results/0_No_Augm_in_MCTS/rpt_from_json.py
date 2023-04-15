@@ -59,7 +59,7 @@ for c in range(no_solions):
 
 ######################
 
-player = 1
+player = 2
 
 if player == 1:
     source1 = ColumnDataSource(data=dict(x=list(range(1, no_solions+1)), y1=fr_1_mcts_arr))
@@ -71,8 +71,8 @@ else:
 # p = figure(plot_width=400, plot_height=300, y_range=(0, 1))
 p = figure(width=400, height=300, y_range=(0, 1))
 
-p.xaxis.axis_label = 'No of PRPs'
-p.yaxis.axis_label = 'Fill Rate'
+p.xaxis.axis_label = r"$${\tiny\#} \tau_s$$"
+p.yaxis.axis_label = r"$$\beta_2$$"
 
 # add a line renderer
 p.line(x='x', y='y1',

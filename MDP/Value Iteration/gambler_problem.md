@@ -15,7 +15,7 @@ The state-value function then gives the probability of winning from each state. 
 
 - In the first state $s$, we have some money.
 - **Actions:** [*range(0,N+1)] meaning that in each state we can decide how much to bet
-  - But the maximum that we can bet is the minimum between the amount of money that we have ($s$) in the current state AND the $N-S$ since the goal is to reach to $N and in the final stages, we=hen we are $N-S$ unit away from goal, even if we have money, there is no need to bet higher values. Therefore, in each state the available actions are: $[0, 1, 2, ..., min(s, N-S)]$
+  - But the maximum that we can bet is the minimum between the amount of money that we have ($s$) in the current state AND the $N-S$ since the goal is to reach to $N$ and in the final stages, we=hen we are $N-S$ unit away from goal, even if we have money, there is no need to bet higher values. Therefore, in each state the available actions are: $[0, 1, 2, ..., min(s, N-S)]$
 - **States:** [*range(0,N+1)] because based on the amount of money we have in each state ($s$) and out action as whether we win/lose, the amount of money in the next state is maximum $N+1$.
 - **Rewards:** Rewards of all states are zero (losing) except for the last state which is 1 (win).
 
