@@ -14,9 +14,9 @@ model_param = {
     'num_iterations': 100000,
     'num_repeats': 100,
     'augmented_rollout': False,  # Keep this as False always
-    'augmented_valid_allocations': False,
-    'augmented_select': False,
-    'augmented_fillrates': False,
+    'augmented_valid_allocations': True,
+    'augmented_select': True,
+    'augmented_fillrates': True,
     'c': 2,  # Exploration Coefficient
     'c1': 2,  # Augmentation Coefficient
     'Big_M': 1e20
